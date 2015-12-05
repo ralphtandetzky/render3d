@@ -1,17 +1,28 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
+#include <cassert>
 #include <cmath>
+#include <iterator>
 
 namespace cu
 {
 
 template <typename T, std::size_t N>
 class Vec
-    : std::array<T,N>
+    : public std::array<T,N>
 {
 public:
   using std::array<T,N>::array;
+
+  Vec( const std::initializer_list<T> & list )
+  {
+    assert( list.size() == N );
+    copy( std::make_move_iterator(begin(list)),
+          std::make_move_iterator(end  (list)),
+          this->begin() );
+  }
 };
 
 
@@ -113,6 +124,16 @@ template <typename T, std::size_t N>
 T l2Norm( const Vec<T,N> & vec )
 {
   return std::sqrt( sqrNorm(vec) );
+}
+
+
+template <typename T, std::size_t N>
+bool operator==( const Vec<T,N> & lhs, const Vec<T,N> & rhs )
+{
+  for ( std::size_t idx = 0; idx < N; ++idx )
+    if ( lhs[idx] != rhs[idx] )
+      return false;
+  return true;
 }
 
 } // cu
