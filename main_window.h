@@ -1,22 +1,17 @@
-#ifndef MAIN_WINDOW_H
-#define MAIN_WINDOW_H
+#pragma once
 
 #include <QWidget>
+#include <memory>
 
-namespace Ui {
-class MainWindow;
-}
-
-class MainWindow : public QWidget
+class MainWindow final : public QWidget
 {
   Q_OBJECT
 
 public:
-  explicit MainWindow(QWidget *parent = 0);
-  ~MainWindow();
+  explicit MainWindow(QWidget *parent = nullptr);
+  virtual ~MainWindow() override;
 
 private:
-  Ui::MainWindow *ui;
+  struct Impl;
+  std::unique_ptr<Impl> m;
 };
-
-#endif // MAIN_WINDOW_H

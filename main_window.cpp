@@ -1,14 +1,18 @@
 #include "main_window.h"
 #include "ui_main_window.h"
 
-MainWindow::MainWindow(QWidget *parent) :
-  QWidget(parent),
-  ui(new Ui::MainWindow)
+
+struct MainWindow::Impl
 {
-  ui->setupUi(this);
+  Ui::MainWindow ui;
+};
+
+MainWindow::MainWindow(QWidget *parent)
+  : QWidget(parent)
+  , m( std::make_unique<Impl>() )
+{
+  m->ui.setupUi(this);
 }
 
-MainWindow::~MainWindow()
-{
-  delete ui;
-}
+
+MainWindow::~MainWindow() = default;
