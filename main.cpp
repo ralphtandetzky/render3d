@@ -1,10 +1,11 @@
 #include "main_window.hpp"
+#include "mat.hpp"
 #include "vec.hpp"
 
 #include <QApplication>
 #include <cassert>
 
-void testVec()
+static void testVec()
 {
   using cu::Vec;
 
@@ -17,9 +18,25 @@ void testVec()
 }
 
 
+static void testMat()
+{
+  using cu::Vec;
+  using cu::Mat;
+
+  Vec<double,3> v = { 1, 2, 3 };
+  Mat<double,2,3> m = {
+    { 0, 0, 1 },
+    { 0, 1, 0 }
+  };
+  assert( m*v == (Vec<double,2>{ 3, 2 }) );
+  assert( m*transpose(m) == ( Mat<double,2,2>{ {1,0}, {0,1} } ) );
+}
+
+
 int main(int argc, char *argv[])
 {
   testVec();
+  testMat();
   QApplication a(argc, argv);
   MainWindow w;
   w.show();

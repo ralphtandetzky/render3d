@@ -18,6 +18,7 @@ SOURCES += main.cpp\
 
 HEADERS  += \
     vec.hpp \
-    main_window.hpp
+    main_window.hpp \
+    mat.hpp
 
 FORMS    += main_window.ui
