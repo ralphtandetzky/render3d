@@ -13,8 +13,15 @@ template <typename T, std::size_t N>
 class Vec
     : public std::array<T,N>
 {
+private:
+  using Base = std::array<T,N>;
+
 public:
-  using std::array<T,N>::array;
+  using Base::Base;
+
+  Vec()
+    : Base{}
+  {}
 
   Vec( const std::initializer_list<T> & list )
   {
@@ -46,8 +53,8 @@ Vec<T,N> & operator-=( Vec<T,N> & lhs, const Vec<T,N> & rhs )
 }
 
 
-template <typename T, std::size_t N>
-Vec<T,N> & operator*=( Vec<T,N> & lhs, const T & rhs )
+template <typename T, std::size_t N, typename Factor>
+Vec<T,N> & operator*=( Vec<T,N> & lhs, const Factor & rhs )
 {
   for ( std::size_t idx = 0; idx < N; ++idx )
     lhs[idx] *= rhs;
@@ -56,10 +63,10 @@ Vec<T,N> & operator*=( Vec<T,N> & lhs, const T & rhs )
 }
 
 
-template <typename T, std::size_t N>
-Vec<T,N> & operator/=( Vec<T,N> & lhs, const T & rhs )
+template <typename T, std::size_t N, typename Factor>
+Vec<T,N> & operator/=( Vec<T,N> & lhs, const Factor & rhs )
 {
-  const auto inv = 1 / rhs;
+  const auto inv = T(1) / rhs;
   for ( std::size_t idx = 0; idx < N; ++idx )
     lhs[idx] *= inv;
 
