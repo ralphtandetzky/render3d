@@ -1,31 +1,45 @@
-#include "main_window.h"
-
+#include "main_window.hpp"
 #include "ui_main_window.h"
 
-#include <QTimer>
-#include <memory>
+#include "vec.hpp"
+#include "mat.hpp"
+
+#include <QPainter>
 
 struct MainWindow::Impl
 {
-    Ui::MainWindow ui;
+  Ui::MainWindow ui;
 };
 
 MainWindow::MainWindow(QWidget *parent)
-    : QWidget(parent)
-    , m( std::make_unique<Impl>() )
+  : QWidget(parent)
+  , m( std::make_unique<Impl>() )
 {
-    m->ui.setupUi( this );
-    auto timer = std::make_unique<QTimer>( this );
-    connect( timer.get(), &QTimer::timeout, m->ui.display, [this]
-    {
-        QPixmap pixmap(this->width(),this->height());
-        pixmap.fill( Qt::black );
-        m->ui.display->setPixmap( pixmap );
-    });
-    timer->start(40);
-    timer.release();
+  m->ui.setupUi(this);
 }
 
-MainWindow::~MainWindow()
+void MainWindow::paintEvent( QPaintEvent * )
 {
+  QPainter painter(this);
+  painter.fillRect( this->rect(), Qt::black );
+  std::array<cu::Vec<double,4>,8> points =
+  {{
+    { 1, 1, 1, 1},
+    { 1, 1,-1, 1},
+    { 1,-1, 1, 1},
+    { 1,-1,-1, 1},
+    {-1, 1, 1, 1},
+    {-1, 1,-1, 1},
+    {-1,-1, 1, 1},
+    {-1,-1,-1, 1}
+  }};
+  const cu::Mat<double,4,4> trafoMat = {
+    { 1, 0, 0, 0 },
+    { 0, 1, 0, 0 },
+    { 0, 0, 1,-8 },
+    { 0, 0, 0, 1 }
+  };
 }
+
+
+MainWindow::~MainWindow() = default;
