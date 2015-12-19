@@ -19,6 +19,7 @@ SOURCES += main.cpp\
 HEADERS  += \
     vec.hpp \
     main_window.hpp \
-    mat.hpp
+    mat.hpp \
+    trafo_mats.hpp
 
 FORMS    += main_window.ui
