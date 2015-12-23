@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cmath>
 #include <iterator>
+#include <type_traits>
 
 namespace cu
 {
@@ -30,6 +31,13 @@ public:
         (*this)[i] = std::move( *(list.begin()+i) );
   }
 };
+
+
+template <typename ...Ts>
+auto makeVec( Ts &&... args ) -> Vec<std::common_type_t<Ts...>,sizeof...(args)>
+{
+    return { std::forward<Ts>(args)... };
+}
 
 
 template <typename T, std::size_t N>
