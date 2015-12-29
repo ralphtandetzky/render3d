@@ -15,6 +15,7 @@ HEADERS  += \
     mat.hpp \
     trafo_mats.hpp \
     vec.hpp \
+    drawing.hpp
 
 FORMS += \
     main_window.ui

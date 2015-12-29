@@ -1,12 +1,15 @@
 #include "main_window.hpp"
 #include "ui_main_window.h"
 
+#include "drawing.hpp"
 #include "vec.hpp"
 #include "mat.hpp"
 #include "trafo_mats.hpp"
 
 #include <QPainter>
 #include <QTimer>
+
+#include <algorithm>
 
 struct MainWindow::Impl
 {
@@ -57,20 +60,35 @@ void MainWindow::paintEvent( QPaintEvent * )
                                1.5f*scaleFactor * vec[1] / -vec[2] + 0.5f*height };
   }
 
+  cu::Mat<unsigned char> img( this->height(), this->width() );
+  std::fill_n( img.data(), img.getNRows()*img.getNCols(), 0 );
+  for ( std::size_t i = 0; i!= points.size(); ++i )
+  {
+      for ( auto bit1 : { 1, 2, 4 } )
+        for ( auto bit2 : { 1, 2, 4 } )
+        {
+            if ( bit1 == bit2 )
+                continue;
+            if ( i & ( bit1 | bit2 ) )
+                continue;
+            const auto & P = transformedPoints[ i               ];
+            const auto & Q = transformedPoints[ i | bit1        ];
+            const auto & R = transformedPoints[ i        | bit2 ];
+            const auto & S = transformedPoints[ i | bit1 | bit2 ];
+            cu::drawTriangle( img, P, Q, S, (unsigned char)0xFF );
+            cu::drawTriangle( img, P, R, S, (unsigned char)0xFF );
+        }
+  }
+
   QPainter painter(this);
   painter.fillRect( this->rect(), Qt::black );
   painter.setPen( Qt::white );
-  for ( std::size_t i = 0; i!= points.size(); ++i )
-  {
-      for ( auto bit : { 1, 2, 4 } )
-      {
-          if ( i & bit )
-              continue;
-          const auto & P = transformedPoints[ i       ];
-          const auto & Q = transformedPoints[ i | bit ];
-          painter.drawLine( QPointF( P[0], P[1] ), QPointF( Q[0], Q[1] ) );
-      }
-  }
+  QImage qImg( img.getNCols(), img.getNRows(), QImage::Format_RGB888 );
+  qImg.fill( Qt::black );
+  for ( std::size_t row = 0; row < img.getNRows(); ++row )
+    for ( std::size_t col = 0; col < img.getNCols(); ++col )
+      qImg.setPixel( col, row, img[row][col] ? 0xFFFFFFFF : 0xFF );
+  painter.drawImage( this->rect(), qImg );
 }
 
 

@@ -210,6 +210,16 @@ public:
   ConstIterator begin() const { return { &data_[0            ], nCols_ }; }
   ConstIterator end()   const { return { &data_[nRows_*nCols_], nCols_ }; }
 
+  const T * data() const
+  {
+    return data_.get();
+  }
+
+  T * data()
+  {
+    return data_.get();
+  }
+
 private:
   std::unique_ptr<T[]> data_;
   std::size_t nRows_{};
