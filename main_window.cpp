@@ -11,7 +11,7 @@
 struct MainWindow::Impl
 {
   Ui::MainWindow ui;
-  double angle{};
+  float angle{};
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -26,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::paintEvent( QPaintEvent * )
 {
-  std::array<cu::Vec<double,4>,8> points =
+  std::array<cu::Vec<float,4>,8> points =
   {{
     { 1, 1, 1, 1},
     { 1, 1,-1, 1},
@@ -38,23 +38,23 @@ void MainWindow::paintEvent( QPaintEvent * )
     {-1,-1,-1, 1}
   }};
   const auto shiftMat =
-          cu::makeTranslationMat( cu::makeVec(0.,0.,-6.) );
+          cu::makeTranslationMat( cu::makeVec(0.f,0.f,-6.f) );
   const auto rotMat =
           cu::makeExtendedMat(
-          cu::makeRotationMat( cu::makeVec( -0.3,0.,0. ) ) *
-          cu::makeRotationMat( m->angle*cu::makeVec(0.,1.,0.) ) );
+          cu::makeRotationMat( cu::makeVec( -0.3f,0.f,0.f ) ) *
+          cu::makeRotationMat( m->angle*cu::makeVec(0.f,1.f,0.f) ) );
   const auto width = this->width();
   const auto height = this->height();
   const auto scaleFactor = std::min( width, height );
   const auto systemMatrix =
           shiftMat *
           rotMat;
-  std::array<cu::Vec<double,2>,8> transformedPoints;
+  std::array<cu::Vec<float,2>,8> transformedPoints;
   for ( std::size_t i = 0; i!= points.size(); ++i )
   {
       const auto vec = systemMatrix * points[i];
-      transformedPoints[i] = { 1.5*scaleFactor * vec[0] / -vec[2] + 0.5*width,
-                               1.5*scaleFactor * vec[1] / -vec[2] + 0.5*height };
+      transformedPoints[i] = { 1.5f*scaleFactor * vec[0] / -vec[2] + 0.5f*width,
+                               1.5f*scaleFactor * vec[1] / -vec[2] + 0.5f*height };
   }
 
   QPainter painter(this);
@@ -62,8 +62,7 @@ void MainWindow::paintEvent( QPaintEvent * )
   painter.setPen( Qt::white );
   for ( std::size_t i = 0; i!= points.size(); ++i )
   {
-      constexpr std::size_t bits[] = { 1, 2, 4 };
-      for ( auto bit : bits )
+      for ( auto bit : { 1, 2, 4 } )
       {
           if ( i & bit )
               continue;
