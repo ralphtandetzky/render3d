@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <utility>
 #include <vec.hpp>
 
@@ -7,7 +8,7 @@ namespace cu
 {
 
 /// A matrix is an array of row vectors.
-template <typename T, std::size_t nRows, std::size_t nCols>
+template <typename T, std::size_t nRows = 0, std::size_t nCols = 0>
 class Mat
     : public std::array<Vec<T,nCols>,nRows>
 {
@@ -19,8 +20,10 @@ private:
       const std::initializer_list<Vec<T,nCols> > & list,
       std::index_sequence<rowIndices...> )
   {
-    return { *(list.begin()+rowIndices)... };
+    return {{ *(list.begin()+rowIndices)... }};
   }
+
+  using Base::size; // private and therefore disabled
 
 public:
   using Base::Base;
@@ -34,6 +37,183 @@ public:
   {
     assert( list.size() == nRows );
   }
+
+  static constexpr std::size_t getNRows() { return nRows; }
+  static constexpr std::size_t getNCols() { return nCols; }
+};
+
+
+template <typename T>
+class Mat<T,0,0>
+{
+  template <typename U>
+  class RowViewImpl
+  {
+  public:
+    RowViewImpl( U data[], std::size_t size )
+      : data_(data)
+      , size_(size)
+    {}
+
+    U & at( std::size_t col )
+    {
+      if ( col >= size_ )
+        throw std::out_of_range( "Column index out of range." );
+      return (*this)[col];
+    }
+
+    const U & at( std::size_t col ) const
+    {
+      if ( col >= size_ )
+        throw std::out_of_range( "Column index out of range." );
+      return (*this)[col];
+    }
+
+    U & operator[]( std::size_t col )
+    {
+      assert( col < size_ );
+      return data_[col];
+    }
+
+    const U & operator[]( std::size_t col ) const
+    {
+      assert( col < size_ );
+      return data_[col];
+    }
+
+    U*       begin()       { return data_      ; }
+    U*       end  ()       { return data_+size_; }
+    const U* begin() const { return data_      ; }
+    const U* end  () const { return data_+size_; }
+
+    std::size_t size() const { return size_; }
+    bool empty() const { return size_ == 0; }
+
+  private:
+    U * data_;
+    std::size_t size_;
+  };
+
+  using RowView = RowViewImpl<T>;
+  using ConstRowView = RowViewImpl<const T>;
+
+  template <typename U>
+  class IteratorImpl
+      : public std::iterator<
+          std::random_access_iterator_tag,
+          RowViewImpl<U>,
+          std::ptrdiff_t,
+          RowViewImpl<U>*,
+          RowViewImpl<U>> // note that the reference type is actually a value type!
+  {
+    template <typename V>
+    static constexpr bool is_same_modulo_const_v =
+        std::is_same<std::remove_const_t<U>,std::remove_const_t<V>>::value;
+  public:
+    IteratorImpl( U data[], std::size_t nCols )
+      : data_(data)
+      , nCols_(nCols)
+    {}
+
+    RowViewImpl<U> operator*() const { return { data_, nCols_ }; }
+    RowViewImpl<U> operator[]( std::ptrdiff_t x ) { return *(*this+x); }
+    IteratorImpl &operator++(   ) { data_ += nCols_; return *this; }
+    IteratorImpl  operator++(int) { IteratorImpl tmp(*this); ++*this; return tmp; }
+    IteratorImpl &operator--(   ) { data_ -= nCols_; return *this; }
+    IteratorImpl  operator--(int) { IteratorImpl tmp(*this); --*this; return tmp; }
+    IteratorImpl &operator+=( std::ptrdiff_t x ) { data_ += x*nCols_; return *this; }
+    IteratorImpl &operator-=( std::ptrdiff_t x ) { data_ -= x*nCols_; return *this; }
+    IteratorImpl operator+( std::ptrdiff_t x ) { return IteratorImpl(*this)+=x; }
+    IteratorImpl operator-( std::ptrdiff_t x ) { return IteratorImpl(*this)-=x; }
+    template <typename V>
+    std::enable_if_t<is_same_modulo_const_v<V>,
+      bool> operator==( const IteratorImpl<V> & other ) const
+    {
+      assert( nCols_ == other.nCols_ );
+      return data_ == other.data_;
+    }
+    template <typename V>
+    std::enable_if_t<is_same_modulo_const_v<V>,
+      bool> operator!=( const IteratorImpl<V> & other ) const
+    {
+      return !(*this == other);
+    }
+    template <typename V>
+    std::enable_if_t<is_same_modulo_const_v<V>,
+      bool> operator<( const IteratorImpl<V> & other ) const
+    {
+      return data_ < other.data_;
+    }
+    template <typename V>
+    std::enable_if_t<is_same_modulo_const_v<V>,
+      bool> operator>( const IteratorImpl<V> & other ) const
+    {
+      return other < *this;
+    }
+    template <typename V>
+    std::enable_if_t<is_same_modulo_const_v<V>,
+      bool> operator>=( const IteratorImpl<V> & other ) const
+    {
+      return !(*this < other);
+    }
+    template <typename V>
+    std::enable_if_t<is_same_modulo_const_v<V>,
+      bool> operator<=( const IteratorImpl<V> & other ) const
+    {
+      return !(other < *this);
+    }
+
+  private:
+    U *data_;
+    std::size_t nCols_;
+  };
+
+  using Iterator = IteratorImpl<T>;
+  using ConstIterator = IteratorImpl<const T>;
+
+public:
+  Mat() = default;
+  Mat( std::size_t nRows,
+       std::size_t nCols )
+    : data_( new T[nRows*nCols] )
+    , nRows_(nRows)
+    , nCols_(nCols)
+  {}
+
+  Mat( std::size_t nRows,
+       std::size_t nCols,
+       const T & value )
+    : Mat( nRows, nCols )
+  {
+    std::fill_n( &data_[0], nRows*nCols, value );
+  }
+
+  std::size_t getNRows() const { return nRows_; }
+  std::size_t getNCols() const { return nCols_; }
+
+  RowView operator[]( std::size_t row )
+  {
+    assert( data_ );
+    assert( row < nRows_ );
+    return { &data_[row*nCols_], nCols_ };
+  }
+
+  ConstRowView operator[]( std::size_t row ) const
+  {
+    assert( data_ );
+    assert( row < nRows_ );
+    return { &data_[row*nCols_], nCols_ };
+  }
+
+  Iterator begin() { return { &data_[0            ], nCols_ }; }
+  Iterator end()   { return { &data_[nRows_*nCols_], nCols_ }; }
+  ConstIterator begin() const { return { &data_[0            ], nCols_ }; }
+  ConstIterator end()   const { return { &data_[nRows_*nCols_], nCols_ }; }
+
+private:
+  std::unique_ptr<T[]> data_;
+  std::size_t nRows_{};
+  std::size_t nCols_{};
 };
 
 
@@ -169,6 +349,17 @@ Mat<T,nCols,nRows> transpose( const Mat<T,nRows,nCols> & mat )
   return detail::transpose_impl(
         mat,
         std::make_index_sequence<nCols>() );
+}
+
+
+template <typename T>
+Mat<T,0,0> transpose( const Mat<T,0,0> & mat )
+{
+  Mat<T,0,0> result( mat.getNCols(), mat.getNRows() );
+  for ( std::size_t resultCol = 0; resultCol != mat.getNRows(); ++resultCol )
+    for ( std::size_t resultRow = 0; resultRow != mat.getNCols(); ++resultRow )
+      result[resultRow][resultCol] = mat[resultCol][resultRow];
+  return result;
 }
 
 
