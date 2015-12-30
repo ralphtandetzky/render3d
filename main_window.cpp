@@ -67,7 +67,7 @@ void MainWindow::paintEvent( QPaintEvent * )
       for ( auto bit1 : { 1, 2, 4 } )
         for ( auto bit2 : { 1, 2, 4 } )
         {
-            if ( bit1 == bit2 )
+            if ( bit1 >= bit2 )
                 continue;
             if ( i & ( bit1 | bit2 ) )
                 continue;
