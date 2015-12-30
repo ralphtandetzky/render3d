@@ -142,12 +142,60 @@ T l2Norm( const Vec<T,N> & vec )
 
 
 template <typename T, std::size_t N>
+Vec<T,N> normalize( const Vec<T,N> & vec )
+{
+  return vec / l2Norm(vec);
+}
+
+
+template <typename T, std::size_t N>
 bool operator==( const Vec<T,N> & lhs, const Vec<T,N> & rhs )
 {
   for ( std::size_t idx = 0; idx < N; ++idx )
     if ( lhs[idx] != rhs[idx] )
       return false;
   return true;
+}
+
+
+template <typename T>
+Vec<T,3> crossProduct( const Vec<T,3> & u,
+                       const Vec<T,3> & v )
+{
+  return { u[1]*v[2] - u[2]*v[1],
+           u[2]*v[0] - u[0]*v[2],
+           u[0]*v[1] - u[1]*v[0] };
+}
+
+
+template <typename T>
+Vec<T,3> normalVector( const Vec<T,3> & P,
+                       const Vec<T,3> & Q,
+                       const Vec<T,3> & R )
+{
+  const auto v = crossProduct( Q-P, R-P );
+  const auto n = sqrNorm(v);
+  if ( n == 0 )
+    return {0,0,0};
+  return v / std::sqrt(n);
+}
+
+
+namespace detail
+{
+
+  template <typename T, std::size_t N, std::size_t ...indexes>
+  Vec<T,N-1> popBackImpl( const Vec<T,N> & vec, std::index_sequence<indexes...> )
+  {
+    return {{ vec[indexes]... }};
+  }
+
+} // namespace detail
+
+template <typename T, std::size_t N>
+Vec<T,N-1> popBack( const Vec<T,N> & vec )
+{
+  return detail::popBackImpl( vec, std::make_index_sequence<N-1>() );
 }
 
 } // cu

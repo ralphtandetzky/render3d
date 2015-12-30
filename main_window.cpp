@@ -52,11 +52,13 @@ void MainWindow::paintEvent( QPaintEvent * )
   const auto systemMatrix =
           shiftMat *
           rotMat;
-  std::array<cu::Vec<float,2>,8> transformedPoints;
+  std::array<cu::Vec<float,2>,8> transformedPoints2d;
+  std::array<cu::Vec<float,3>,8> transformedPoints3d;
   for ( std::size_t i = 0; i!= points.size(); ++i )
   {
-      const auto vec = systemMatrix * points[i];
-      transformedPoints[i] = { 1.5f*scaleFactor * vec[0] / -vec[2] + 0.5f*width,
+    transformedPoints3d[i] = cu::popBack( systemMatrix * points[i] );
+    const auto & vec = transformedPoints3d[i];
+    transformedPoints2d[i] = { 1.5f*scaleFactor * vec[0] / -vec[2] + 0.5f*width,
                                1.5f*scaleFactor * vec[1] / -vec[2] + 0.5f*height };
   }
 
@@ -64,20 +66,27 @@ void MainWindow::paintEvent( QPaintEvent * )
   std::fill_n( img.data(), img.getNRows()*img.getNCols(), 0 );
   for ( std::size_t i = 0; i!= points.size(); ++i )
   {
-      for ( auto bit1 : { 1, 2, 4 } )
-        for ( auto bit2 : { 1, 2, 4 } )
-        {
-            if ( bit1 >= bit2 )
-                continue;
-            if ( i & ( bit1 | bit2 ) )
-                continue;
-            const auto & P = transformedPoints[ i               ];
-            const auto & Q = transformedPoints[ i | bit1        ];
-            const auto & R = transformedPoints[ i        | bit2 ];
-            const auto & S = transformedPoints[ i | bit1 | bit2 ];
-            cu::drawTriangle( img, P, Q, S, (unsigned char)0xFF );
-            cu::drawTriangle( img, P, R, S, (unsigned char)0xFF );
-        }
+    for ( auto bit1 : { 1, 2, 4 } )
+      for ( auto bit2 : { 1, 2, 4 } )
+      {
+        if ( bit1 >= bit2 )
+            continue;
+        if ( i & ( bit1 | bit2 ) )
+            continue;
+        const auto & P2d = transformedPoints2d[ i               ];
+        const auto & Q2d = transformedPoints2d[ i | bit1        ];
+        const auto & R2d = transformedPoints2d[ i        | bit2 ];
+        const auto & S2d = transformedPoints2d[ i | bit1 | bit2 ];
+        const auto & P3d = transformedPoints3d[ i               ];
+        const auto & Q3d = transformedPoints3d[ i | bit1        ];
+        const auto & R3d = transformedPoints3d[ i        | bit2 ];
+        const auto normalVec = cu::normalVector( P3d, Q3d, R3d );
+        const auto lightVec = cu::normalize( cu::makeVec( 1.f, 1.f, -2.f ) );
+        const auto absCos = std::abs( normalVec * lightVec );
+        const unsigned char color = (0.8*absCos*absCos+0.2) * 0xFF;
+        cu::drawTriangle( img, P2d, Q2d, S2d, color );
+        cu::drawTriangle( img, P2d, R2d, S2d, color );
+      }
   }
 
   QPainter painter(this);
@@ -87,7 +96,7 @@ void MainWindow::paintEvent( QPaintEvent * )
   qImg.fill( Qt::black );
   for ( std::size_t row = 0; row < img.getNRows(); ++row )
     for ( std::size_t col = 0; col < img.getNCols(); ++col )
-      qImg.setPixel( col, row, img[row][col] ? 0xFFFFFFFF : 0xFF );
+      qImg.setPixel( col, row, img[row][col] * 0x10101 + 0xFF000000 );
   painter.drawImage( this->rect(), qImg );
 }
 
