@@ -63,7 +63,12 @@ void MainWindow::paintEvent( QPaintEvent * )
   }
 
   cu::Mat<unsigned char> img( this->height(), this->width() );
-  std::fill_n( img.data(), img.getNRows()*img.getNCols(), 0 );
+  const auto imgSize = img.getNRows()*img.getNCols();
+  std::fill_n( img.data(), imgSize, 0 );
+  const auto maxZ = -0.1f;
+  const auto minZ = -100.f;
+  cu::Mat<float> zBuffer( img.getNRows(), img.getNCols() );
+  std::fill_n( zBuffer.data(), imgSize, minZ );
   for ( std::size_t i = 0; i!= points.size(); ++i )
   {
     for ( auto bit1 : { 1, 2, 4 } )
@@ -80,12 +85,13 @@ void MainWindow::paintEvent( QPaintEvent * )
         const auto & P3d = transformedPoints3d[ i               ];
         const auto & Q3d = transformedPoints3d[ i | bit1        ];
         const auto & R3d = transformedPoints3d[ i        | bit2 ];
+        const auto z = (Q3d + R3d)[2];
         const auto normalVec = cu::normalVector( P3d, Q3d, R3d );
         const auto lightVec = cu::normalize( cu::makeVec( 1.f, 1.f, -2.f ) );
         const auto absCos = std::abs( normalVec * lightVec );
         const unsigned char color = (0.8*absCos*absCos+0.2) * 0xFF;
-        cu::drawTriangle( img, P2d, Q2d, S2d, color );
-        cu::drawTriangle( img, P2d, R2d, S2d, color );
+        cu::drawTriangle( img, P2d, R2d, S2d, color, zBuffer, maxZ, z );
+        cu::drawTriangle( img, P2d, Q2d, S2d, color, zBuffer, maxZ, z );
       }
   }
 
